@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monitoring System</title>
+    <style>
+        /* Mode Terang (Light Mode) */
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f9;
+            color: #333;
+        }
+
+        header {
+            background-color: #4caf50;
+            color: white;
+            padding: 10px 0;
+            margin-bottom: 20px;
+        }
+
+        .data-container {
+            font-size: 20px;
+            color: #333;
+            margin: 20px auto;
+            max-width: 600px;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            background-color: #fff;
+        }
+
+        .data {
+            font-size: 24px;
+            margin: 10px 0;
+        }
+
+        .chart-container {
+            margin: 20px auto;
+            max-width: 600px;
+        }
+
+        .error {
+            color: red;
+            font-size: 18px;
+        }
+
+        /* Mode Gelap (Dark Mode) */
+        body.dark-mode {
+            background-color: #2c2c2c;
+            color: #f4f4f9;
+        }
+
+        body.dark-mode header {
+            background-color: #333;
+        }
+
+        body.dark-mode .data-container {
+            background-color: #444;
+            border-color: #666;
+        }
+
+        body.dark-mode .data {
+            color: #f4f4f9;
+        }
+
+        body.dark-mode .error {
+            color: #ff6347;
+        }
+
+        /* Switch Button */
+        .switch {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            align-items: center;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            width: 34px;
+            height: 20px;
+            background-color: #ccc;
+            border-radius: 50px;
+            position: relative;
+            transition: background-color 0.3s;
+        }
+
+        .slider:before {
+            content: "";
+            position: absolute;
+            left: 4px;
+            top: 4px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: white;
+            transition: transform 0.3s;
+        }
+
+        input:checked+.slider {
+            background-color: #4caf50;
+        }
+
+        input:checked+.slider:before {
+            transform: translateX(14px);
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+    <header>
+        <h1>Monitoring System</h1>
+        <p>Live Data from Blynk</p>
+    </header>
+
+    <!-- Switch Button untuk Dark Mode -->
+    <label class="switch">
+        <input type="checkbox" id="darkModeSwitch">
+        <span class="slider"></span>
+    </label>
+
+    <div class="data-container">
+        <p class="data">Asap (Smoke): <span id="smoke">Loading...</span></p>
+        <p class="data">Suhu (Temperature): <span id="temperature">Loading...</span> °C</p>
+        <p id="error-message" class="error"></p>
+    </div>
+
+    <div class="chart-container">
+        <canvas id="smokeChart"></canvas>
+        <canvas id="tempChart"></canvas>
+    </div>
+
+    <script>
+        const AUTH_TOKEN = 'KSx2mKACw-gD8V9z8YD1aQtsZaFAsEnl'; // Ganti dengan Auth Token Anda
+        const BASE_URL = 'https://blynk.cloud/external/api/get?token=' + AUTH_TOKEN;
+
+        // Inisialisasi grafik menggunakan Chart.js
+        const smokeCtx = document.getElementById('smokeChart').getContext('2d');
+        const tempCtx = document.getElementById('tempChart').getContext('2d');
+
+        const smokeChart = new Chart(smokeCtx, {
+            type: 'line',
+            data: {
+                labels: [], // Waktu
+                datasets: [{
+                    label: 'Asap (Smoke)',
+                    data: [],
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                    tension: 0.4
+                }]
+            },
+            options: {
+                scales: {
+                    x: { title: { display: true, text: 'Waktu' } },
+                    y: { title: { display: true, text: 'Nilai' } }
+                }
+            }
+        });
+
+        const tempChart = new Chart(tempCtx, {
+            type: 'line',
+            data: {
+                labels: [], // Waktu
+                datasets: [{
+                    label: 'Suhu (Temperature)',
+                    data: [],
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                    tension: 0.4
+                }]
+            },
+            options: {
+                scales: {
+                    x: { title: { display: true, text: 'Waktu' } },
+                    y: { title: { display: true, text: 'Nilai (°C)' } }
+                }
+            }
+        });
+
+        // Fungsi untuk mengambil data dari Blynk
+        async function fetchData(pin, elementId, chart) {
+            try {
+                const response = await fetch(`${BASE_URL}&pin=${pin}`);
+                if (!response.ok) throw new Error(`Failed to fetch data for pin ${pin}`);
+                const data = await response.text();
+
+                // Perbarui teks
+                document.getElementById(elementId).innerText = data;
+
+                // Perbarui grafik
+                const time = new Date().toLocaleTimeString();
+                chart.data.labels.push(time);
+                chart.data.datasets[0].data.push(parseFloat(data));
+
+                // Batasi jumlah data dalam grafik ke 4 titik waktu
+                if (chart.data.labels.length > 4) {
+                    chart.data.labels.shift();
+                    chart.data.datasets[0].data.shift();
+                }
+
+                chart.update();
+            } catch (error) {
+                console.error(error);
+                document.getElementById('error-message').innerText = error.message;
+            }
+        }
+
+        // Fungsi untuk memperbarui semua data
+        function updateData() {
+            fetchData('V3', 'smoke', smokeChart);       // Data asap (smoke)
+            fetchData('V4', 'temperature', tempChart);  // Data suhu (temperature)
+        }
+
+        // Tombol toggle untuk Dark Mode menggunakan switch
+        const darkModeSwitch = document.getElementById('darkModeSwitch');
+        darkModeSwitch.addEventListener('change', () => {
+            document.body.classList.toggle('dark-mode', darkModeSwitch.checked);
+        });
+
+        // Jalankan pembaruan data setiap 2 detik
+        setInterval(updateData, 2000);
+        updateData(); // Update data pertama kali saat halaman dimuat
+    </script>
+</body>
+
+</html>
