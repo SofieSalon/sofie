@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Monitoring System</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background: linear-gradient(to right, #0b689e, #f4a261);
+        }
+
+        .login-container {
+            background-color: #d910100a;
+            padding: 40px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+            width: 100%;
+            max-width: 350px;
+            text-align: center;
+            transition: transform 0.3s ease-in-out;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .login-container:hover {
+            transform: translateY(-10px);
+        }
+
+        h2 {
+            font-size: 24px;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        input[type="password"] {
+            width: 100%;
+            max-width: 250px;
+            padding: 8px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+
+        input[type="password"]:focus {
+            border-color: #2575fc;
+            outline: none;
+        }
+
+        button {
+            padding: 12px 20px;
+            background-color: #f4a261;
+            color: white;
+            font-size: 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 250px;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #1e5db1;
+        }
+
+        .back-button {
+            padding: 12px 20px;
+            background-color: #2a9d8f;
+            color: #333;
+            font-size: 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 250px;
+            margin-top: 10px;
+            transition: background-color 0.3s ease;
+        }
+
+        .back-button:hover {
+            background-color: #ddd;
+        }
+
+        .error {
+            color: red;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="login-container">
+        <h2>Perlu password</h2>
+        <input type="password" id="password" placeholder="Enter Password" autocomplete="off">
+        <button onclick="checkPassword()">Next</button>
+        <a href="../home">
+            <button class="back-button">Back</button>
+        </a>
+        <p id="error-message" class="error"></p>
+    </div>
+
+    <script>
+        const correctPassword = 'admin123';  // Correct password
+
+        function checkPassword() {
+            const password = document.getElementById('password').value;
+            const errorMessage = document.getElementById('error-message');
+
+            if (password === correctPassword) {
+                // Redirect to the main page upon successful login
+                window.location.href = 'kontroling.html';
+            } else {
+                // Show error message if password is incorrect
+                errorMessage.innerText = 'Incorrect password, please try again.';
+            }
+        }
+
+
+    </script>
+</body>
+
+</html>
