@@ -4,51 +4,71 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Control Virtual Pin V0</title>
-    <link rel="stylesheet" href="../style.css"> <!-- Menghubungkan file CSS -->
+    <title>Control Virtual Pin</title>
+    <link rel="stylesheet" href="../style.css">
     <script>
-        const AUTH_TOKEN = 'KSx2mKACw-gD8V9z8YD1aQtsZaFAsEnl'; // Gantilah dengan token Blynk Anda
-        const BASE_URL = 'https://blynk.cloud/external/api/get?token=' + AUTH_TOKEN;
+        const AUTH_TOKEN = 'KSx2mKACw-gD8V9z8YD1aQtsZaFAsEnl'; // Ganti dengan token Blynk Anda
+        const BASE_URL = `https://blynk.cloud/external/api/get?token=${AUTH_TOKEN}`;
+
+        let previousDangerStatus = null; // Untuk melacak status bahaya sebelumnya
 
         // Fungsi untuk mengambil nilai dari Virtual Pin
         async function getPinValue(pin) {
             try {
                 const response = await fetch(`${BASE_URL}&pin=${pin}`);
-                if (!response.ok) throw new Error(`Failed to get value from ${pin}`);
-                const data = await response.json();
-                return data[0]; // Mengambil nilai dari response JSON
+                if (!response.ok) throw new Error(`Gagal mendapatkan nilai dari ${pin}`);
+                const data = await response.text(); // Menggunakan text karena response API Blynk seringkali berupa string
+                return data;
             } catch (error) {
                 console.error(error);
                 return null; // Jika terjadi error, kembalikan null
             }
         }
 
-        // Fungsi untuk mengupdate nilai V0
+        // Fungsi untuk mengubah status V0
         async function toggleV0(state) {
-            const value = state ? 1 : 0; // 1 = ON, 0 = OFF
+            const value = state ? 1 : 0;
             try {
+                document.getElementById('device-status').innerHTML = `Device Status: ${state ? 'ON' : 'OFF'}`;
                 const response = await fetch(`${BASE_URL.replace('get', 'update')}&pin=V0&value=${value}`);
-                if (!response.ok) throw new Error(`Failed to update V0 state to ${value}`);
-                alert(`Pin V0 set to ${state ? 'ON' : 'OFF'}`);
+                if (!response.ok) throw new Error(`Gagal mengubah status V0 menjadi ${value}`);
+                alert(`Pin V0 berhasil diatur menjadi ${state ? 'ON' : 'OFF'}`);
             } catch (error) {
                 console.error(error);
                 alert('Error: ' + error.message);
             }
         }
 
-        // Fungsi untuk memuat nilai perangkat, tombol save, dan tombol danger
+        // Fungsi untuk memuat nilai dari semua pin
         async function loadDeviceStatus() {
-            const v0Value = await getPinValue('V0');
-            const v1Value = await getPinValue('V1');
-            const v2Value = await getPinValue('V2');
+            try {
+                const v0Value = await getPinValue('V0');
+                const v1Value = await getPinValue('V1');
+                const v2Value = await getPinValue('V2');
 
-            document.getElementById('device-status').innerHTML = `Device Status: ${v0Value === '1' ? 'ON' : 'OFF'}`;
-            document.getElementById('danger-status').innerHTML = `Bahaya: ${v1Value === '1' ? 'Terdeteksi' : 'Tidak Terdeteksi'}`;
-            document.getElementById('save-status').innerHTML = `Aman: ${v2Value === '1' ? 'Ya' : 'Device tidak aktif'}`;
+                document.getElementById('device-status').innerHTML = `Device Status: ${v0Value === '1' ? 'ON' : 'OFF'}`;
+                document.getElementById('danger-status').innerHTML = `Bahaya: ${v1Value === '1' ? 'Terdeteksi' : 'Tidak Terdeteksi'}`;
+                document.getElementById('save-status').innerHTML = `Aman: ${v2Value === '1' ? 'Ya' : 'Tidak'}`;
+
+                // Jika bahaya terdeteksi dan status sebelumnya bukan "Terdeteksi"
+                if (v1Value === '1' && previousDangerStatus !== '1') {
+                    alert('Peringatan! Bahaya terdeteksi!');
+                }
+
+                // Perbarui status bahaya sebelumnya
+                previousDangerStatus = v1Value;
+            } catch (error) {
+                console.error('Gagal memuat status perangkat:', error);
+            }
         }
 
-        // Load status ketika halaman dimuat
-        window.onload = loadDeviceStatus;
+        // Memuat status secara berkala setiap 5 detik
+        function startPolling() {
+            loadDeviceStatus();
+            setInterval(loadDeviceStatus, 5000); // Update setiap 5 detik
+        }
+
+        window.onload = startPolling;
     </script>
 </head>
 
@@ -62,8 +82,8 @@
                 <li><a href="../about/">About</a></li>
             </ul>
         </nav>
-        <h1>Control device</h1>
-        <p>Pengontrolan Perangkat IOT</p>
+        <h1>Control Device</h1>
+        <p>Pengontrolan Perangkat IoT</p>
     </header>
 
     <main>
