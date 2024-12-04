@@ -61,6 +61,80 @@
                 console.error('Gagal memuat status perangkat:', error);
             }
         }
+        // Menyimpan data waktu dan nilai untuk smoke dan suhu
+        const smokeData = [];
+        const tempData = [];
+        const timeStamps = [];
+
+        // Fungsi untuk mendapatkan status PIR berdasarkan waktu
+        function getPirStatus() {
+            const now = new Date();
+            const currentHour = now.getHours();
+            return (currentHour >= 18 || currentHour < 6) ? "Aktif" : "Tidak Aktif";
+        }
+
+        // Fungsi untuk mengambil data dari Blynk
+        async function fetchData(pin) {
+            try {
+                const response = await fetch(`${BASE_URL}&pin=${pin}`);
+                if (!response.ok) throw new Error(`Failed to fetch data for pin ${pin}`);
+
+                const data = await response.text();
+                return data;
+            } catch (error) {
+                console.error(error);
+                document.getElementById('error-message').innerText = error.message;
+                return null;
+            }
+        }
+
+        // Fungsi untuk memperbarui tabel
+        function updateTable() {
+            const time = new Date().toLocaleTimeString();
+
+            // Ambil data dari Blynk
+            fetchData('V3').then(smoke => {
+                fetchData('V4').then(temperature => {
+                    if (smoke && temperature) {
+                        // Tambahkan data baru ke array
+                        smokeData.push(smoke);
+                        tempData.push(temperature);
+                        timeStamps.push(time);
+
+                        // Batasi jumlah data menjadi 10 kolom terbaru
+                        if (smokeData.length > 10) {
+                            smokeData.shift();
+                            tempData.shift();
+                            timeStamps.shift();
+                        }
+
+                        // Perbarui tabel
+                        const tableBody = document.getElementById('data-table-body');
+                        tableBody.innerHTML = ''; // Bersihkan tabel sebelumnya
+
+                        for (let i = 0; i < smokeData.length; i++) {
+                            const row = document.createElement('tr');
+                            const timeCell = document.createElement('td');
+                            const smokeCell = document.createElement('td');
+                            const tempCell = document.createElement('td');
+
+                            timeCell.innerText = timeStamps[i];
+                            smokeCell.innerText = smokeData[i];
+                            tempCell.innerText = tempData[i];
+
+                            row.appendChild(timeCell);
+                            row.appendChild(smokeCell);
+                            row.appendChild(tempCell);
+                            tableBody.appendChild(row);
+                        }
+                    }
+                });
+            });
+        }
+
+        // Jalankan pembaruan data setiap 5 detik
+        setInterval(updateTable, 5000);
+        updateTable(); // Update data pertama kali saat halaman dimuat
 
         // Memuat status secara berkala setiap 5 detik
         function startPolling() {
@@ -103,6 +177,23 @@
             <p id="save-status">Loading...</p>
         </div>
     </main>
+
+    <div class="data-container" id="monitoring">
+        <h2>Data Monitoring</h2>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Waktu</th>
+                    <th>Asap (Smoke) (Nilai)</th>
+                    <th>Suhu (Temperature) (°C)</th>
+                </tr>
+            </thead>
+            <tbody id="data-table-body">
+                <!-- Data will be populated dynamically -->
+            </tbody>
+        </table>
+        <p id="error-message" class="error"></p>
+    </div>
 
     <footer>
         <p>&copy; 2024 Sofie Salon, All rights reserved.</p>
